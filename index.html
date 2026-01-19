@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard CENIT - Cronograma Greenlog</title>
+    <link rel="icon" type="image/png"
+        href="https://cenit-transporte.com/wp-content/uploads/2025/10/cobranding-en-blanco.png">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #004a99;
+            /* CENIT Blue */
+            --secondary: #2ecc71;
+            /* Greenlog Green */
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: #38bdf8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+        }
+
+        header {
+            padding: 2rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-cenit {
+            height: 45px;
+            display: block;
+        }
+
+        .logo-cenit img {
+            height: 100%;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .tag {
+            background: var(--secondary);
+            color: #000;
+            padding: 0.2rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        main {
+            padding: 2rem 5%;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* GANTT STYLES */
+        .gantt-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .gantt-header {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            border-bottom: 1px solid var(--border);
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .gantt-activity-col-header {
+            padding: 1rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-right: 1px solid var(--border);
+        }
+
+        .time-scale {
+            display: grid;
+            grid-template-columns: repeat(20, 1fr);
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .time-scale-item {
+            padding: 1rem 0.2rem;
+            border-right: 1px dotted var(--border);
+        }
+
+        .gantt-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            border-bottom: 1px solid var(--border);
+            min-height: 50px;
+        }
+
+        .row.principal {
+            background: rgba(255, 255, 255, 0.03);
+            font-weight: 600;
+        }
+
+        .activity-name {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            border-right: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        .row.sub .activity-name {
+            padding-left: 2.5rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .timeline {
+            display: grid;
+            grid-template-columns: repeat(20, 1fr);
+            position: relative;
+        }
+
+        .timeline-cell {
+            border-right: 1px dotted var(--border);
+            height: 100%;
+        }
+
+        .bar {
+            position: absolute;
+            height: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: 12px;
+            z-index: 5;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .bar:hover {
+            filter: brightness(1.2);
+            height: 28px;
+        }
+
+        .bar-progress {
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+        }
+
+        .principal .bar {
+            height: 12px;
+            opacity: 0.6;
+            filter: blur(1px);
+        }
+
+        /* CUSTOM SCROLLBAR */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        .today-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--accent);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .today-label {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent);
+            color: var(--bg);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .footer-info {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="logo-container">
+            <div class="logo-cenit">
+                <img src="https://cenit-transporte.com/wp-content/uploads/2025/10/cobranding-en-blanco.png"
+                    alt="CENIT Logo">
+            </div>
+            <span class="tag">Greenlog</span>
+        </div>
+        <div style="font-size: 1.1rem; font-weight: 600; color: var(--accent);">
+            CRONOGRAMA DE ACTIVIDADES - CONTROL AMBIENTAL
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <a href="Cronograma_CENIT_COMPLETO.xlsx" download class="btn-download"
+                style="text-decoration: none; background: var(--secondary); color: #000; padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; transition: transform 0.2s;">
+                <span>📥</span> Descargar Excel
+            </a>
+            <div style="text-align: right;">
+                <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted);">Responsable</div>
+                <div style="font-size: 0.9rem; font-weight: 600;">Camilo Ortegon</div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-label">Avance General</span>
+                <span class="stat-value" id="total-progress">0%</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Estado</span>
+                <span class="stat-value" style="color: var(--secondary); font-size: 1.5rem;">En Fase Inicial</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Semanas Totales</span>
+                <span class="stat-value">20</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Día de Proyecto</span>
+                <span class="stat-value" id="current-day">1</span>
+            </div>
+        </section>
+
+        <section class="gantt-container">
+            <div class="gantt-header">
+                <div class="gantt-activity-col-header">Actividades del Proyecto</div>
+                <div class="time-scale" id="time-scale">
+                    <!-- Weeks will be injected here -->
+                </div>
+            </div>
+            <div class="gantt-body" id="gantt-body">
+                <!-- Rows will be injected here -->
+            </div>
+        </section>
+
+        <div class="footer-info">
+            <div>&copy; 2025 Greenlog - CENIT | Proyecto de Control Ambiental</div>
+            <div>Actualizado: <span id="last-update">Enero 2025</span></div>
+        </div>
+    </main>
+
+    <script src="cronograma_data.js"></script>
+    <script>
+        // Load Data from Script Tag or LocalStorage (avoiding CORS & enabling Live Preview)
+        function loadGantt() {
+            // Priority: LocalStorage (Live updates from Admin) > CRONOGRAMA_DATA (Static file)
+            const localData = localStorage.getItem('cenit_cronograma_live');
+            if (localData) {
+                console.log("Cargando datos desde LocalStorage (Live Preview)");
+                renderGantt(JSON.parse(localData));
+            } else if (typeof CRONOGRAMA_DATA !== 'undefined') {
+                renderGantt(CRONOGRAMA_DATA);
+            } else {
+                console.error("No se encontró base de datos.");
+                alert("Error: Ejecuta 'python cronograma_cenit.py sync' primero.");
+            }
+        }
+
+        function renderGantt(dataFull) {
+            const body = document.getElementById('gantt-body');
+            const timeScale = document.getElementById('time-scale');
+            const data = dataFull.actividades;
+            const config = dataFull.config || {};
+
+            body.innerHTML = '';
+            timeScale.innerHTML = '';
+
+            // Render Time Scale
+            for (let i = 1; i <= 20; i++) {
+                const item = document.createElement('div');
+                item.className = 'time-scale-item';
+                item.innerText = 'S' + i;
+                timeScale.appendChild(item);
+            }
+
+            // Render Rows
+            data.forEach(item => {
+                const row = document.createElement('div');
+                row.className = `row ${item.tipo === 'PRINCIPAL' ? 'principal' : 'sub'}`;
+
+                const nameCol = document.createElement('div');
+                nameCol.className = 'activity-name';
+                nameCol.innerText = item.actividad;
+
+                const timeline = document.createElement('div');
+                timeline.className = 'timeline';
+
+                // Add Bar
+                if (item.semana_inicio && item.duracion) {
+                    const bar = document.createElement('div');
+                    bar.className = 'bar';
+                    const left = ((item.semana_inicio - 1) / 20) * 100;
+                    const width = (item.duracion / 20) * 100;
+                    bar.style.left = `${left}%`;
+                    bar.style.width = `${width}%`;
+                    bar.style.backgroundColor = item.tipo === 'PRINCIPAL' ? (item.color || '#3498db') : '#475569';
+
+                    if (item.porcentaje > 0) {
+                        const progress = document.createElement('div');
+                        progress.className = 'bar-progress';
+                        progress.style.width = `${item.porcentaje}%`;
+                        bar.appendChild(progress);
+                    }
+                    bar.title = `${item.actividad} (${item.porcentaje}%)`;
+                    timeline.appendChild(bar);
+                }
+                row.appendChild(nameCol);
+                row.appendChild(timeline);
+                body.appendChild(row);
+            });
+
+            // Set current stats
+            const totalProgress = Math.round(data.reduce((acc, curr) => acc + curr.porcentaje, 0) / data.length);
+            document.getElementById('total-progress').innerText = `${totalProgress}%`;
+
+            // Calculate Today line based on DYNAMIC START DATE (2026)
+            const startDateStr = config.fecha_inicio || "2026-01-20";
+            const startParts = startDateStr.split("-");
+            const start = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+            const today = new Date();
+
+            // Update "Last Update" text with year
+            document.getElementById('last-update').innerText = `Enero 2026 (Inicio: ${startDateStr})`;
+
+            const diffTime = today - start;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays >= 0 && diffDays <= 140) {
+                const todayLeft = (diffDays / 140) * 100;
+                document.getElementById('current-day').innerText = diffDays;
+
+                const timelines = document.querySelectorAll('.timeline');
+                if (timelines.length > 0) {
+                    const todayLine = document.createElement('div');
+                    todayLine.className = 'today-line';
+                    todayLine.style.left = `${todayLeft}%`;
+                    todayLine.innerHTML = `<div class="today-label">Hoy</div>`;
+                    timelines[0].appendChild(todayLine);
+                }
+            } else {
+                document.getElementById('current-day').innerText = diffDays < 0 ? "Por iniciar" : "Completado";
+            }
+        }
+
+        window.onload = loadGantt;
+    </script>
+</body>
+
+</html>

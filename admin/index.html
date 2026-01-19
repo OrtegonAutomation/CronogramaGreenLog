@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Registro de Avances CENIT</title>
+    <link rel="icon" type="image/png"
+        href="https://cenit-transporte.com/wp-content/uploads/2025/10/cobranding-en-blanco.png">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #004a99;
+            --secondary: #2ecc71;
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --accent: #3b82f6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+        }
+
+        header {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem;
+            background: #f8fafc;
+            border-bottom: 2px solid var(--border);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        input[type="number"] {
+            width: 70px;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        select {
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-success {
+            background: var(--secondary);
+            color: #000;
+        }
+
+        .status-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .fase-info {
+            font-weight: 700;
+            color: var(--primary);
+            background: #eff6ff;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+        }
+    </style>
+    <script>
+        // Protección simple para GitHub Pages
+        const CLAVE_ADMIN = "cenit2025";
+        const acceso = prompt("Ingrese la clave administrativa:");
+        if (acceso !== CLAVE_ADMIN) {
+            alert("Acceso denegado");
+            document.body.innerHTML = "<h1 style='color:red; text-align:center; margin-top:50px;'>No tienes permisos para ver esta página.</h1>";
+            window.location.href = "../index.html";
+        }
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <img src="https://cenit-transporte.com/wp-content/uploads/2025/10/cobranding-en-blanco.png"
+                    alt="CENIT Logo" style="height: 50px; background: #004a99; padding: 5px; border-radius: 8px;">
+                <div>
+                    <h1>Panel de Control Camilo</h1>
+                    <p style="color: var(--text-muted);">Registro de Avances y Tiempos - GREENLOG</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn" style="background: #6366f1;" onclick="iniciarProyectoHoy()">🚀 Iniciar Proyecto
+                    Hoy</button>
+                <button class="btn btn-success" onclick="saveData()">💾 Guardar y Descargar</button>
+            </div>
+        </header>
+
+        <div class="card" id="config-panel"
+            style="margin-bottom: 1rem; border-left: 5px solid var(--accent); padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong>Configuración de Fecha:</strong>
+                    <span id="fecha-inicio-display" style="color: var(--accent); font-weight: 700;">---</span>
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.85rem;">
+                    Año: 2026 | Estado: Activo
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div id="admin-table-container">
+                <p>Cargando datos del cronograma...</p>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 1rem; color: var(--text-muted); font-size: 0.8rem;">
+            Nota: Las modificaciones se reflejan <strong>automáticamente</strong> en el Dashboard local. No olvides
+            descargar el JSON final para sincronizar con GitHub.
+        </div>
+    </div>
+
+    <script src="../cronograma_data.js"></script>
+    <script>
+        let projectDataFull = { config: {}, actividades: [] };
+
+        function loadData() {
+            // Priority: LocalStorage (to resume session) > CRONOGRAMA_DATA
+            const local = localStorage.getItem('cenit_cronograma_live');
+            if (local) {
+                projectDataFull = JSON.parse(local);
+            } else if (typeof CRONOGRAMA_DATA !== 'undefined') {
+                projectDataFull = JSON.parse(JSON.stringify(CRONOGRAMA_DATA));
+            }
+
+            document.getElementById('fecha-inicio-display').innerText = projectDataFull.config.fecha_inicio || "No asignada";
+            renderTable();
+        }
+
+        function renderTable() {
+            const container = document.getElementById('admin-table-container');
+            let html = '<table><thead><tr><th>Actividad</th><th>Estado</th><th>% Avance</th><th>Resp.</th></tr></thead><tbody>';
+
+            projectDataFull.actividades.forEach((item, index) => {
+                if (item.tipo === 'PRINCIPAL') {
+                    html += `<tr style="background: #f8fafc;"><td colspan="4" class="fase-info">${item.actividad}</td></tr>`;
+                } else {
+                    html += `
+                        <tr>
+                            <td>${item.actividad}</td>
+                            <td>
+                                <select onchange="updateItem(${index}, 'estado', this.value)">
+                                    <option value="Pendiente" ${item.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                                    <option value="En Progreso" ${item.estado === 'En Progreso' ? 'selected' : ''}>En Progreso</option>
+                                    <option value="Completado" ${item.estado === 'Completado' ? 'selected' : ''}>Completado</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" value="${item.porcentaje}" min="0" max="100" 
+                                       onchange="updateItem(${index}, 'porcentaje', this.value)"> %
+                            </td>
+                            <td>${item.responsable}</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function updateItem(index, field, value) {
+            const item = projectDataFull.actividades[index];
+            if (field === 'porcentaje') {
+                item[field] = parseInt(value);
+                if (value == 100) item.estado = 'Completado';
+                else if (value > 0) item.estado = 'En Progreso';
+            } else {
+                item[field] = value;
+                if (value === 'Completado') item.porcentaje = 100;
+            }
+
+            // Live Preview: Update LocalStorage
+            localStorage.setItem('cenit_cronograma_live', JSON.stringify(projectDataFull));
+            renderTable(); // Re-render table to show status changes
+        }
+
+        function iniciarProyectoHoy() {
+            const hoy = new Date();
+            const fechaStr = hoy.toISOString().split('T')[0];
+            if (confirm(`¿Establecer inicio del proyecto para hoy (${fechaStr})? Esto afectará todo el cronograma.`)) {
+                projectDataFull.config.fecha_inicio = fechaStr;
+                document.getElementById('fecha-inicio-display').innerText = fechaStr;
+                localStorage.setItem('cenit_cronograma_live', JSON.stringify(projectDataFull));
+                alert("Fecha actualizada. El Dashboard ahora mostrará las semanas desde hoy.");
+                renderTable();
+            }
+        }
+
+        function saveData() {
+            const dataStr = JSON.stringify(projectDataFull, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cronograma_data.json';
+            a.click();
+            alert("JSON generado. Reemplaza 'cronograma_data.json' y corre 'python cronograma_cenit.py sync' para actualizar Excel y GitHub.");
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+
+</html>
