@@ -547,9 +547,25 @@
             const chartOptions = {
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: { padding: 10 },
                 plugins: {
                     legend: {
-                        labels: { color: '#f8fafc', font: { family: 'Outfit' } }
+                        position: 'bottom',
+                        labels: { color: '#f8fafc', font: { family: 'Outfit', size: 11 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                let label = context.dataset.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed.y !== undefined) {
+                                    label += context.parsed.y + '%';
+                                } else {
+                                    label += context.parsed + ' tareas';
+                                }
+                                return label;
+                            }
+                        }
                     }
                 },
                 scales: {
@@ -583,6 +599,7 @@
             });
 
             // Chart 2: Dona (Distribución de Estados)
+            const totalTareas = Object.values(estados).reduce((a, b) => a + b, 0);
             charts.status = new Chart(document.getElementById('statusDistributionChart'), {
                 type: 'doughnut',
                 data: {
@@ -600,7 +617,20 @@
                 },
                 options: {
                     ...chartOptions,
-                    scales: { y: { display: false }, x: { display: false } }
+                    layout: { padding: 25 },
+                    scales: { y: { display: false }, x: { display: false } },
+                    plugins: {
+                        ...chartOptions.plugins,
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const value = context.parsed;
+                                    const percentage = totalTareas > 0 ? ((value / totalTareas) * 100).toFixed(1) : 0;
+                                    return `${context.label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
                 }
             });
         }
