@@ -290,10 +290,10 @@
             CRONOGRAMA DE ACTIVIDADES - CONTROL AMBIENTAL
         </div>
         <div style="display: flex; gap: 1rem; align-items: center;">
-            <a href="docs/Cronograma_CENIT_COMPLETO.xlsx" download class="btn-download"
-                style="text-decoration: none; background: var(--secondary); color: #000; padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; transition: transform 0.2s;">
+            <button onclick="descargarExcelCloud()" class="btn-download"
+                style="border: none; cursor: pointer; text-decoration: none; background: var(--secondary); color: #000; padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; transition: transform 0.2s;">
                 <span>📥</span> Descargar Excel
-            </a>
+            </button>
             <div style="text-align: right;">
                 <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted);">Responsable</div>
                 <div style="font-size: 0.9rem; font-weight: 600;">Camilo Ortegon</div>
@@ -317,7 +317,12 @@
             </div>
             <div class="stat-card">
                 <span class="stat-label">Día de Proyecto</span>
-                <span class="stat-value" id="current-day">1</span>
+                <span class="stat-value" id="current-day">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Inicio Proyecto</span>
+                <span class="stat-value" id="project-start-display"
+                    style="font-size: 1.2rem; color: var(--accent);">---</span>
             </div>
         </section>
 
@@ -340,13 +345,16 @@
     </main>
 
     <!-- Librerías Cloud -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 
     <script>
+        // Configuración de Supabase
         const SUPABASE_URL = "https://rmfpwdmxnffurnxkevvi.supabase.co";
         const SUPABASE_KEY = "sb_publishable_H3VjmfuU9ht15xxrvBJsVQ_OQqQQLrN";
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Usamos window.supabase para evitar conflictos de nombres
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function loadGantt() {
             try {
@@ -417,7 +425,8 @@
             document.getElementById('total-progress').innerText = `${totalProgress}%`;
 
             const startDateStr = config.fecha_inicio || "2026-01-20";
-            document.getElementById('last-update').innerText = `Inicio Proyecto: ${startDateStr}`;
+            document.getElementById('last-update').innerText = `Sync Cloud: ${new Date().toLocaleDateString()}`;
+            document.getElementById('project-start-display').innerText = startDateStr;
 
             const start = new Date(startDateStr + "T00:00:00");
             const today = new Date();
