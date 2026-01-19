@@ -116,6 +116,38 @@
             letter-spacing: 1px;
         }
 
+        /* CHARTS STYLES */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 16px;
+            height: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .chart-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .chart-container {
+            flex-grow: 1;
+            position: relative;
+        }
+
         /* GANTT STYLES */
         .gantt-container {
             background: var(--card-bg);
@@ -335,6 +367,21 @@
             </div>
         </section>
 
+        <section class="charts-grid">
+            <div class="chart-card">
+                <span class="chart-title">Avance por Fase</span>
+                <div class="chart-container">
+                    <canvas id="faseProgressChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <span class="chart-title">Distribución de Estados</span>
+                <div class="chart-container">
+                    <canvas id="statusDistributionChart"></canvas>
+                </div>
+            </div>
+        </section>
+
         <section class="gantt-container">
             <div class="gantt-header">
                 <div class="gantt-activity-col-header">Actividades del Proyecto</div>
@@ -358,6 +405,7 @@
     <!-- Librerías Cloud -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         // Configuración de Supabase
@@ -460,6 +508,101 @@
 
             // Guardar datos en window para el Excel
             window.lastData = dataFull;
+
+            // Renderizar Gráficas
+            renderCharts(data);
+        }
+
+        let charts = {};
+
+        function renderCharts(data) {
+            // 1. Preparar datos por Fase
+            const fases = {};
+            const estados = { 'Pendiente': 0, 'En Progreso': 0, 'Completado': 0 };
+
+            data.forEach(item => {
+                if (item.tipo === 'PRINCIPAL') {
+                    if (!fases[item.actividad]) fases[item.actividad] = { total: 0, count: 0 };
+                } else {
+                    // Buscar la fase a la que pertenece (simplificado: asumiendo orden secuencial)
+                    const lastPrincipal = data.slice(0, data.indexOf(item)).reverse().find(i => i.tipo === 'PRINCIPAL');
+                    if (lastPrincipal) {
+                        if (!fases[lastPrincipal.actividad]) fases[lastPrincipal.actividad] = { total: 0, count: 0 };
+                        fases[lastPrincipal.actividad].total += item.porcentaje;
+                        fases[lastPrincipal.actividad].count++;
+                    }
+                    // Contar estados
+                    estados[item.estado] = (estados[item.estado] || 0) + 1;
+                }
+            });
+
+            const faseLabels = Object.keys(fases);
+            const faseValues = faseLabels.map(f => Math.round(fases[f].total / (fases[f].count || 1)));
+
+            // Destruir charts previos si existen
+            if (charts.fase) charts.fase.destroy();
+            if (charts.status) charts.status.destroy();
+
+            // Configuración común
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: '#f8fafc', font: { family: 'Outfit' } }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8' }
+                    }
+                }
+            };
+
+            // Chart 1: Barra (Avance por Fase)
+            charts.fase = new Chart(document.getElementById('faseProgressChart'), {
+                type: 'bar',
+                data: {
+                    labels: faseLabels,
+                    datasets: [{
+                        label: '% Avance',
+                        data: faseValues,
+                        backgroundColor: 'rgba(56, 189, 248, 0.6)',
+                        borderColor: '#38bdf8',
+                        borderWidth: 1,
+                        borderRadius: 8
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // Chart 2: Dona (Distribución de Estados)
+            charts.status = new Chart(document.getElementById('statusDistributionChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(estados),
+                    datasets: [{
+                        data: Object.values(estados),
+                        backgroundColor: [
+                            'rgba(148, 163, 184, 0.6)', // Pendiente
+                            'rgba(59, 130, 246, 0.6)',  // En Progreso
+                            'rgba(46, 204, 113, 0.6)'   // Completado
+                        ],
+                        borderColor: ['#94a3b8', '#3b82f6', '#2ecc71'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: { y: { display: false }, x: { display: false } }
+                }
+            });
         }
 
         async function descargarExcelCloud() {
