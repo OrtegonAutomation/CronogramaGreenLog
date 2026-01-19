@@ -5,7 +5,7 @@ Plataforma de gestión de proyectos para el control ambiental de CENIT. Incluye 
 ## 🚀 Acceso
 - **Dashboard Cliente:** `index.html` (URL Base)
 - **Panel Administrativo:** `/admin/` (URL Base/admin/)
-  - *Clave de acceso:* `cenit2025`
+
 
 ## 🛠️ Herramientas
 - **`cronograma_cenit.py`**: Motor Python para sincronizar datos y generar:
