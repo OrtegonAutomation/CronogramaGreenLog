@@ -133,11 +133,17 @@
     <script>
         // Protección simple para GitHub Pages
         const CLAVE_ADMIN = "cenit2025";
+        let isAuthenticated = false;
+
         const acceso = prompt("Ingrese la clave administrativa:");
-        if (acceso !== CLAVE_ADMIN) {
+        if (acceso === CLAVE_ADMIN) {
+            isAuthenticated = true;
+        } else {
             alert("Acceso denegado");
-            document.body.innerHTML = "<h1 style='color:red; text-align:center; margin-top:50px;'>No tienes permisos para ver esta página.</h1>";
             window.location.href = "../index.html";
+            // Forzamos el detenimiento de la ejecución
+            if (window.stop) window.stop();
+            document.documentElement.innerHTML = "";
         }
     </script>
 </head>
@@ -193,6 +199,7 @@
         let projectDataFull = { config: {}, actividades: [] };
 
         async function loadData() {
+            if (!isAuthenticated) return;
             // Priority: Cloud Data
             try {
                 const { data: configData } = await supabaseClient.from('config').select('*').single();
