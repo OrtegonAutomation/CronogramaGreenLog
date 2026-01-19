@@ -290,7 +290,7 @@
             CRONOGRAMA DE ACTIVIDADES - CONTROL AMBIENTAL
         </div>
         <div style="display: flex; gap: 1rem; align-items: center;">
-            <a href="Cronograma_CENIT_COMPLETO.xlsx" download class="btn-download"
+            <a href="docs/Cronograma_CENIT_COMPLETO.xlsx" download class="btn-download"
                 style="text-decoration: none; background: var(--secondary); color: #000; padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; transition: transform 0.2s;">
                 <span>📥</span> Descargar Excel
             </a>
@@ -346,14 +346,14 @@
     <script>
         const SUPABASE_URL = "https://rmfpwdmxnffurnxkevvi.supabase.co";
         const SUPABASE_KEY = "sb_publishable_H3VjmfuU9ht15xxrvBJsVQ_OQqQQLrN";
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function loadGantt() {
             try {
                 // 1. Obtener Config
-                const { data: configData, error: errCfg } = await supabase.from('config').select('*').single();
+                const { data: configData, error: errCfg } = await supabaseClient.from('config').select('*').single();
                 // 2. Obtener Actividades
-                const { data: actsData, error: errActs } = await supabase.from('actividades').select('*').order('orden', { ascending: true });
+                const { data: actsData, error: errActs } = await supabaseClient.from('actividades').select('*').order('orden', { ascending: true });
 
                 if (errCfg || errActs) throw new Error("Error cargando Supabase");
 

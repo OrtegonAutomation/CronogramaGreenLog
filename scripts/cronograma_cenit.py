@@ -30,10 +30,10 @@ import sys
 # CONFIGURACIÓN DEL PROYECTO
 # ============================================================================
 FECHA_INICIO = datetime(2025, 1, 20)
-ARCHIVO_JSON = "cronograma_data.json"
-ARCHIVO_JS = "cronograma_data.js"
-ARCHIVO_EXCEL = "Cronograma_CENIT_COMPLETO.xlsx"
-ARCHIVO_IMAGEN = "Cronograma_Gantt_CENIT.png"
+ARCHIVO_JSON = "data/cronograma_data.json"
+ARCHIVO_JS = "data/cronograma_data.js"
+ARCHIVO_EXCEL = "docs/Cronograma_CENIT_COMPLETO.xlsx"
+ARCHIVO_IMAGEN = "assets/img/Cronograma_Gantt_CENIT.png"
 
 def cargar_datos_json():
     """Carga los datos desde el archivo JSON central"""
