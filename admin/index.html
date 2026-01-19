@@ -156,7 +156,6 @@
             <div style="display: flex; gap: 1rem;">
                 <button class="btn" style="background: #6366f1;" onclick="iniciarProyectoHoy()">🚀 Iniciar Proyecto
                     Hoy</button>
-                <button class="btn btn-success" onclick="saveData()">💾 Guardar y Descargar</button>
             </div>
         </header>
 
@@ -180,8 +179,7 @@
         </div>
 
         <div style="text-align: center; margin-top: 1rem; color: var(--text-muted); font-size: 0.8rem;">
-            Nota: Las modificaciones se reflejan <strong>automáticamente</strong> en el Dashboard local. No olvides
-            descargar el JSON final para sincronizar con GitHub.
+            Nota: Las modificaciones se guardan en tiempo real y se reflejan instantáneamente en el Dashboard.
         </div>
     </div>
 
@@ -285,9 +283,7 @@
             }
         }
 
-        function saveData() {
-            alert("En el modo Nube, los cambios se guardan automáticamente al editarlos. No necesitas descargar nada.");
-        }
+
 
         window.onload = loadData;
     </script>

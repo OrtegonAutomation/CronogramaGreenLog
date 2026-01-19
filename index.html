@@ -456,9 +456,9 @@
             if (!dataFull) return;
 
             const workbook = new ExcelJS.Workbook();
-            const sheet = workbook.addWorksheet('Gantt Visual');
 
-            // Estilos y Cabecera
+            // HOJA 1: GANTT VISUAL
+            const sheet = workbook.addWorksheet('Gantt Visual');
             sheet.getColumn(1).width = 40;
             sheet.getRow(1).values = ['Actividad', ...Array.from({ length: 20 }, (_, i) => `S${i + 1}`)];
             sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -477,11 +477,50 @@
                 for (let i = 0; i < dur; i++) {
                     const cell = row.getCell(start + 1 + i);
                     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + color } };
+
+                    // Mostrar avance en la celda
                     if (act.porcentaje === 100) {
-                        cell.value = 'x';
+                        cell.value = '✓';
                         cell.alignment = { horizontal: 'center' };
                         cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+                    } else if (act.porcentaje > 0) {
+                        cell.value = act.porcentaje + '%';
+                        cell.alignment = { horizontal: 'center' };
+                        cell.font = { color: { argb: 'FFFFFFFF' }, size: 8 };
                     }
+                }
+            });
+
+            // HOJA 2: TABLA ESTRUCTURADA
+            const tableSheet = workbook.addWorksheet('Detalle Actividades');
+            tableSheet.columns = [
+                { header: 'Actividad', key: 'actividad', width: 50 },
+                { header: 'Tipo', key: 'tipo', width: 15 },
+                { header: 'Responsable', key: 'responsable', width: 25 },
+                { header: 'Estado', key: 'estado', width: 15 },
+                { header: 'Avance', key: 'porcentaje', width: 10 },
+                { header: 'S. Inicio', key: 'semana_inicio', width: 10 },
+                { header: 'Duración', key: 'duracion', width: 10 }
+            ];
+
+            // Estilos cabecera tabla
+            tableSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            tableSheet.getRow(1).eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2ECC71' } } });
+
+            dataFull.actividades.forEach(act => {
+                const row = tableSheet.addRow({
+                    actividad: act.actividad,
+                    tipo: act.tipo,
+                    responsable: act.responsable || 'N/A',
+                    estado: act.estado,
+                    porcentaje: act.porcentaje + '%',
+                    semana_inicio: act.semana_inicio,
+                    duracion: act.duracion
+                });
+
+                if (act.tipo === 'PRINCIPAL') {
+                    row.font = { bold: true };
+                    row.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
                 }
             });
 
@@ -489,7 +528,7 @@
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `Cronograma_CENIT_Cloud.xlsx`;
+            link.download = `Cronograma_Control_Ambiental_${new Date().toISOString().split('T')[0]}.xlsx`;
             link.click();
         }
 
