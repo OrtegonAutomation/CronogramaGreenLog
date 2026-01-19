@@ -339,20 +339,28 @@
         </div>
     </main>
 
-    <script src="cronograma_data.js"></script>
+    <!-- Librerías Cloud -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+
     <script>
-        // Load Data from Script Tag or LocalStorage (avoiding CORS & enabling Live Preview)
-        function loadGantt() {
-            // Priority: LocalStorage (Live updates from Admin) > CRONOGRAMA_DATA (Static file)
-            const localData = localStorage.getItem('cenit_cronograma_live');
-            if (localData) {
-                console.log("Cargando datos desde LocalStorage (Live Preview)");
-                renderGantt(JSON.parse(localData));
-            } else if (typeof CRONOGRAMA_DATA !== 'undefined') {
-                renderGantt(CRONOGRAMA_DATA);
-            } else {
-                console.error("No se encontró base de datos.");
-                alert("Error: Ejecuta 'python cronograma_cenit.py sync' primero.");
+        const SUPABASE_URL = "https://rmfpwdmxnffurnxkevvi.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_H3VjmfuU9ht15xxrvBJsVQ_OQqQQLrN";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function loadGantt() {
+            try {
+                // 1. Obtener Config
+                const { data: configData, error: errCfg } = await supabase.from('config').select('*').single();
+                // 2. Obtener Actividades
+                const { data: actsData, error: errActs } = await supabase.from('actividades').select('*').order('orden', { ascending: true });
+
+                if (errCfg || errActs) throw new Error("Error cargando Supabase");
+
+                renderGantt({ config: configData, actividades: actsData });
+            } catch (e) {
+                console.error("Cloud Error:", e);
+                alert("Error al conectar con la base de datos en la nube.");
             }
         }
 
@@ -365,7 +373,6 @@
             body.innerHTML = '';
             timeScale.innerHTML = '';
 
-            // Render Time Scale
             for (let i = 1; i <= 20; i++) {
                 const item = document.createElement('div');
                 item.className = 'time-scale-item';
@@ -373,19 +380,15 @@
                 timeScale.appendChild(item);
             }
 
-            // Render Rows
             data.forEach(item => {
                 const row = document.createElement('div');
                 row.className = `row ${item.tipo === 'PRINCIPAL' ? 'principal' : 'sub'}`;
-
                 const nameCol = document.createElement('div');
                 nameCol.className = 'activity-name';
                 nameCol.innerText = item.actividad;
-
                 const timeline = document.createElement('div');
                 timeline.className = 'timeline';
 
-                // Add Bar
                 if (item.semana_inicio && item.duracion) {
                     const bar = document.createElement('div');
                     bar.className = 'bar';
@@ -409,26 +412,20 @@
                 body.appendChild(row);
             });
 
-            // Set current stats
+            // Stats
             const totalProgress = Math.round(data.reduce((acc, curr) => acc + curr.porcentaje, 0) / data.length);
             document.getElementById('total-progress').innerText = `${totalProgress}%`;
 
-            // Calculate Today line based on DYNAMIC START DATE (2026)
             const startDateStr = config.fecha_inicio || "2026-01-20";
-            const startParts = startDateStr.split("-");
-            const start = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+            document.getElementById('last-update').innerText = `Inicio Proyecto: ${startDateStr}`;
+
+            const start = new Date(startDateStr + "T00:00:00");
             const today = new Date();
-
-            // Update "Last Update" text with year
-            document.getElementById('last-update').innerText = `Enero 2026 (Inicio: ${startDateStr})`;
-
-            const diffTime = today - start;
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            const diffDays = Math.floor((today - start) / (1000 * 60 * 60 * 24));
 
             if (diffDays >= 0 && diffDays <= 140) {
                 const todayLeft = (diffDays / 140) * 100;
                 document.getElementById('current-day').innerText = diffDays;
-
                 const timelines = document.querySelectorAll('.timeline');
                 if (timelines.length > 0) {
                     const todayLine = document.createElement('div');
@@ -440,9 +437,54 @@
             } else {
                 document.getElementById('current-day').innerText = diffDays < 0 ? "Por iniciar" : "Completado";
             }
+
+            // Guardar datos en window para el Excel
+            window.lastData = dataFull;
         }
 
-        window.onload = loadGantt;
+        async function descargarExcelCloud() {
+            const dataFull = window.lastData;
+            if (!dataFull) return;
+
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet('Gantt Visual');
+
+            // Estilos y Cabecera
+            sheet.getColumn(1).width = 40;
+            sheet.getRow(1).values = ['Actividad', ...Array.from({ length: 20 }, (_, i) => `S${i + 1}`)];
+            sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            sheet.getRow(1).eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF004A99' } } });
+
+            dataFull.actividades.forEach((act, idx) => {
+                const rowIndex = idx + 2;
+                const row = sheet.getRow(rowIndex);
+                row.getCell(1).value = act.actividad;
+                if (act.tipo === 'PRINCIPAL') row.getCell(1).font = { bold: true };
+
+                const start = act.semana_inicio;
+                const dur = act.duracion;
+                const color = (act.color || '#3498db').replace('#', '');
+
+                for (let i = 0; i < dur; i++) {
+                    const cell = row.getCell(start + 1 + i);
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + color } };
+                    if (act.porcentaje === 100) {
+                        cell.value = 'x';
+                        cell.alignment = { horizontal: 'center' };
+                        cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+                    }
+                }
+            });
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Cronograma_CENIT_Cloud.xlsx`;
+            link.click();
+        }
+
+        loadGantt();
     </script>
 </body>
 

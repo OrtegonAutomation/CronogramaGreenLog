@@ -185,21 +185,29 @@
         </div>
     </div>
 
-    <script src="../cronograma_data.js"></script>
+    <!-- Librería Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        const SUPABASE_URL = "https://rmfpwdmxnffurnxkevvi.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_H3VjmfuU9ht15xxrvBJsVQ_OQqQQLrN";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         let projectDataFull = { config: {}, actividades: [] };
 
-        function loadData() {
-            // Priority: LocalStorage (to resume session) > CRONOGRAMA_DATA
-            const local = localStorage.getItem('cenit_cronograma_live');
-            if (local) {
-                projectDataFull = JSON.parse(local);
-            } else if (typeof CRONOGRAMA_DATA !== 'undefined') {
-                projectDataFull = JSON.parse(JSON.stringify(CRONOGRAMA_DATA));
-            }
+        async function loadData() {
+            // Priority: Cloud Data
+            try {
+                const { data: configData } = await supabaseClient.from('config').select('*').single();
+                const { data: actsData } = await supabaseClient.from('actividades').select('*').order('orden', { ascending: true });
 
-            document.getElementById('fecha-inicio-display').innerText = projectDataFull.config.fecha_inicio || "No asignada";
-            renderTable();
+                projectDataFull = { config: configData, actividades: actsData };
+
+                document.getElementById('fecha-inicio-display').innerText = projectDataFull.config.fecha_inicio || "No asignada";
+                renderTable();
+            } catch (e) {
+                console.error("Error cargando nube:", e);
+                alert("Error al conectar con Supabase.");
+            }
         }
 
         function renderTable() {
@@ -214,7 +222,7 @@
                         <tr>
                             <td>${item.actividad}</td>
                             <td>
-                                <select onchange="updateItem(${index}, 'estado', this.value)">
+                                <select onchange="updateItemCloud('${item.id}', 'estado', this.value)">
                                     <option value="Pendiente" ${item.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
                                     <option value="En Progreso" ${item.estado === 'En Progreso' ? 'selected' : ''}>En Progreso</option>
                                     <option value="Completado" ${item.estado === 'Completado' ? 'selected' : ''}>Completado</option>
@@ -222,7 +230,7 @@
                             </td>
                             <td>
                                 <input type="number" value="${item.porcentaje}" min="0" max="100" 
-                                       onchange="updateItem(${index}, 'porcentaje', this.value)"> %
+                                       onchange="updateItemCloud('${item.id}', 'porcentaje', this.value)"> %
                             </td>
                             <td>${item.responsable}</td>
                         </tr>
@@ -234,43 +242,51 @@
             container.innerHTML = html;
         }
 
-        function updateItem(index, field, value) {
-            const item = projectDataFull.actividades[index];
+        async function updateItemCloud(id, field, value) {
+            let updateObj = {};
+            updateObj[field] = (field === 'porcentaje') ? parseInt(value) : value;
+
+            // Auto-update status/percentage logic
             if (field === 'porcentaje') {
-                item[field] = parseInt(value);
-                if (value == 100) item.estado = 'Completado';
-                else if (value > 0) item.estado = 'En Progreso';
-            } else {
-                item[field] = value;
-                if (value === 'Completado') item.porcentaje = 100;
+                if (value == 100) updateObj.estado = 'Completado';
+                else if (value > 0) updateObj.estado = 'En Progreso';
+            } else if (field === 'estado' && value === 'Completado') {
+                updateObj.porcentaje = 100;
             }
 
-            // Live Preview: Update LocalStorage
-            localStorage.setItem('cenit_cronograma_live', JSON.stringify(projectDataFull));
-            renderTable(); // Re-render table to show status changes
+            const { error } = await supabaseClient
+                .from('actividades')
+                .update(updateObj)
+                .eq('id', id);
+
+            if (error) {
+                console.error("Error updating:", error);
+                alert("Error al guardar en la nube.");
+            } else {
+                console.log("Actualizado en la nube:", id);
+                // Refresh local data copy
+                loadData();
+            }
         }
 
-        function iniciarProyectoHoy() {
+        async function iniciarProyectoHoy() {
             const hoy = new Date();
             const fechaStr = hoy.toISOString().split('T')[0];
-            if (confirm(`¿Establecer inicio del proyecto para hoy (${fechaStr})? Esto afectará todo el cronograma.`)) {
-                projectDataFull.config.fecha_inicio = fechaStr;
-                document.getElementById('fecha-inicio-display').innerText = fechaStr;
-                localStorage.setItem('cenit_cronograma_live', JSON.stringify(projectDataFull));
-                alert("Fecha actualizada. El Dashboard ahora mostrará las semanas desde hoy.");
-                renderTable();
+            if (confirm(`¿Establecer inicio del proyecto para hoy (${fechaStr})?`)) {
+                const { error } = await supabaseClient
+                    .from('config')
+                    .update({ fecha_inicio: fechaStr })
+                    .eq('id', projectDataFull.config.id);
+
+                if (!error) {
+                    alert("Fecha actualizada en la nube.");
+                    loadData();
+                }
             }
         }
 
         function saveData() {
-            const dataStr = JSON.stringify(projectDataFull, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'cronograma_data.json';
-            a.click();
-            alert("JSON generado. Reemplaza 'cronograma_data.json' y corre 'python cronograma_cenit.py sync' para actualizar Excel y GitHub.");
+            alert("En el modo Nube, los cambios se guardan automáticamente al editarlos. No necesitas descargar nada.");
         }
 
         window.onload = loadData;
